@@ -1,6 +1,6 @@
 PRO MAVEN_DATA_TPLOT, TRANGE=TRANGE, DATA_DIR=DATA_DIR,  KEY_PARAM=KEY_PARAM, CREATEALL=CREATEALL,$
                                     SPICE=SPICE, MAG=MAG, SWEA=SWEA, SWIA=SWIA, NGIMS=NGIMS, LANPW=LANPW, LPW_LIST=LPW_LIST, $
-                                    STATIC=STATIC, DEN=DEN, IVEL=IVEL, APID=APID, TEMP=TEMP, $
+                                    STATIC=STATIC, DEN=DEN, IVEL=IVEL, APID=APID, TEMP=TEMP, TEMP_SMOOTH=TEMP_SMOOTH, TS_LEVEL=TS_LEVEL, $
                                     SAVE=SAVE, RESTORE=RESTORE, FILENAME=FILENAME, NO_SERVER = NO_SERVER, $
                                     NO_DELETE=NO_DELETE, PLOT=PLOT, _EXTRA=_EXTRA
 
@@ -30,11 +30,13 @@ PRO MAVEN_DATA_TPLOT, TRANGE=TRANGE, DATA_DIR=DATA_DIR,  KEY_PARAM=KEY_PARAM, CR
 ;   SWAI: MAVEN Solar Wind Ion Analyzer data
 ;   STATIC: MAVEN SuperThermal and Thermal Ion Composition data
 ;         sub_keywords (can only be used when "/static" is set): 
-;                  DEN --ion density
-;                  IVEL--generate ion bulk velocity and vector velocity tplot variables
-;                  APID--apid used for loading data to calculate velocity, can either be 'd0' or 'cf'
-;                        default apid is 'd0', high-resolution data 'd1' or 'cf' may introduce unexpected data disturbances
-;                  TEMP--load temperature data
+;                  DEN -- ion density
+;                  IVEL-- generate ion bulk velocity and vector velocity tplot variables
+;                  APID-- apid used for loading data to calculate velocity, can either be 'd0' or 'cf'
+;                         default apid is 'd0', high-resolution data 'd1' or 'cf' may introduce unexpected data disturbances
+;                  TEMP-- load temperature data
+;                  TEMP_SMOOTH and TS_LEVEL -- apply smooth to temperature data to provide continuous temperature outputs with function "tsmooth2.pro"
+;                                              as a reference, ts_level is 30 in "mvn_sta_l0_crib.pro"
 ;   LPW： MAVEN Langmuir Probe and Waves data
 ;         sub_keywords (can only be used when "/kpw" is set): 
 ;                   LPW_LIST: LPW data products list given in "mvn_lpw_load_l2.pro"
@@ -46,7 +48,7 @@ PRO MAVEN_DATA_TPLOT, TRANGE=TRANGE, DATA_DIR=DATA_DIR,  KEY_PARAM=KEY_PARAM, CR
 ; OUTPUTS: tplot variables according to the keywords provided
 ;
 ; CREATED BY: YDYE@MUST， 20190812
-; LAST UPDATE: 20210303
+; LAST UPDATE: 20210916
 ; -  
 
 ; Preparations
@@ -84,7 +86,7 @@ ENDIF
 
 IF keyword_set(no_server) THEN BEGIN
    help,/structure, mvn_file_source(no_server=1,/set)
-   print, 'Data source has changed to local-only'
+   print, 'Data source has been changed to local-only'
 ENDIF
 
 ;=========================================Key Parameters=========================================
@@ -93,7 +95,7 @@ IF keyword_set(key_param) THEN BEGIN
   ; Load MAVEN kp (Key Parameter)data.
   ; KP data can be devided into IUVS data and In-situ data.
   ; In-situ data include LPW, NGIMS, MAG, SEP, STATIC, SWEA, SWIA Data,
-  ;         Spacecraft ‘ephemeris’ and orientation,Time oriented data: 4/8 second cadence.
+  ;         Spacecraft ‘ephemeris’ and orientation, Time oriented data: 4/8 second cadence.
   ; IUVS data include Periapse Limb Scans, Apoapse Imaging, Coronal Scans,
   ;         Stellar Occultation Observation Modes, Observation oriented data.
   ; KP files are stored daily and need to be downloaded by day
@@ -114,7 +116,7 @@ IF keyword_set(key_param) THEN BEGIN
       tplot_rename, 'MVN_KP_SPACECRAFT:MSO_X', 'p_mso_x'
       tplot_rename, 'MVN_KP_SPACECRAFT:MSO_Y', 'p_mso_y'
       tplot_rename, 'MVN_KP_SPACECRAFT:MSO_Z', 'p_mso_z'
-      join_vec, ['p_mso_x', 'p_mso_y', 'p_mso_z'], 'p_mso' ; store three components into one psudo variable.
+      join_vec, ['p_mso_x', 'p_mso_y', 'p_mso_z'], 'p_mso'
     
       radius=3397.0
       calc, '"p_mso_r" = "p_mso"/radius' ; change unit to per radius of Mars
@@ -281,6 +283,12 @@ ENDIF
     get_4dt,'tb_4d','mvn_sta_get_c6',MASS=[12,20],m_int=16,name='temp_o+'
     get_4dt,'tb_4d','mvn_sta_get_c6',MASS=[24,40],m_int=32,name='temp_o2+'
     get_4dt,'tb_4d','mvn_sta_get_c6',MASS=[40,48],m_int=44,name='temp_co2+'
+    IF keyword_set(temp_smooth) THEN BEGIN
+      tsmooth2, 'temp_h+', ts_level
+      tsmooth2, 'temp_o+', ts_level
+      tsmooth2, 'temp_o2+', ts_level
+      tsmooth2, 'temp_co2+', ts_level
+    ENDIF
   ENDIF
 ENDIF
 ;===========================================================================================
@@ -298,7 +306,7 @@ IF keyword_set(ngims) THEN BEGIN
 ENDIF
 ;===========================================================================================
 
-;=======================================MAVEN/NGIMS=======================================
+;==================================MAVEN/Langmuir Probe======================================
 IF keyword_set(lanpw) THEN BEGIN
   ; Load MAVEN Langmuir Probe and Waves (LPW) L2 elecrton number density and temperature data
   ; This routine will create three tplot variables, namely as follows:
@@ -325,7 +333,7 @@ END
 
 IF keyword_set(no_server) THEN BEGIN
   help,/structure, mvn_file_source(/reset) ; reset source settings
-  print, 'Data source has changed back to default, remote-checking applied for the next time'
+  print, 'Data source has been changed back to default, remote-checking applied for the next time'
 ENDIF
 
 END

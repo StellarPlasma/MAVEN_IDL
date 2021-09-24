@@ -48,7 +48,7 @@ PRO MAVEN_DATA_TPLOT, TRANGE=TRANGE, DATA_DIR=DATA_DIR,  KEY_PARAM=KEY_PARAM, CR
 ; OUTPUTS: tplot variables according to the keywords provided
 ;
 ; CREATED BY: YDYE@MUST， 20190812
-; LAST UPDATE: 20210916
+; LAST UPDATE: 20210924
 ; -  
 
 ; Preparations
@@ -210,14 +210,13 @@ IF keyword_set(static) THEN BEGIN
 ; For reference, check "MAVEN SupraThermal and Thermal Ion Compostion (STATIC) Instrument." Space Science Reviews 195(1-4): 199-256.
 ;If you want to save common blocks in the sta_load procedure, using my_mvn_sta_l2_load instead
   
-  mvn_sta_l2_load, sta_apid='c6', /tplot_vars_create; if no apid keyword set, then load all apids
-  mvn_scpot
-  ;mvn_multi_ions_spectrum
-  tplot_rename, 'mvn_sta_c6_M', 'eflux_mass' 
-  
   IF keyword_set(den) THEN BEGIN
       ; Use get_4dt to fetch multi-ion's density
       ; Check data avaliablity
+      mvn_sta_l2_load, sta_apid='c6', /tplot_vars_create; if no apid keyword set, then load all apids
+      mvn_scpot
+      ;mvn_multi_ions_spectrum
+      tplot_rename, 'mvn_sta_c6_M', 'eflux_mass'
       get_data, 'eflux_mass', dtype = dtype
       IF  dtype EQ 0 THEN BEGIN
           PRINT, 'No STATIC C6 data for '+tdate+' being loaded, now return...'
@@ -278,12 +277,13 @@ IF keyword_set(static) THEN BEGIN
 ENDIF
    
   IF keyword_set(temp) THEN BEGIN
+    mvn_sta_l2_load, sta_apid='c6'
     ; Use get_4dt and function "t_4d" to fetch multi-ion's temperature,  in units of eV, assumes no s/c charging 
     get_4dt,'tb_4d','mvn_sta_get_c6',MASS=[0.5,1.68],m_int=1,name='temp_h+'
     get_4dt,'tb_4d','mvn_sta_get_c6',MASS=[12,20],m_int=16,name='temp_o+'
     get_4dt,'tb_4d','mvn_sta_get_c6',MASS=[24,40],m_int=32,name='temp_o2+'
     get_4dt,'tb_4d','mvn_sta_get_c6',MASS=[40,48],m_int=44,name='temp_co2+'
-    IF keyword_set(temp_smooth) THEN BEGIN
+    IF keyword_set(t_smooth) THEN BEGIN
       tsmooth2, 'temp_h+', ts_level
       tsmooth2, 'temp_o+', ts_level
       tsmooth2, 'temp_o2+', ts_level

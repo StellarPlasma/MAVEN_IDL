@@ -18,9 +18,10 @@ PRO MAVEN_DATA_TPLOT, TRANGE=TRANGE, DATA_DIR=DATA_DIR,  KEY_PARAM=KEY_PARAM, CR
 ;       MAVEN_DATA_TPLOT, TRANGE = ['2015-01-01/00:00:00', '2015-01-01/00:30:00'], /mag
 ; INPUT:
 ;   TRANGE: time range to search & load data, and to generate tvars
-;   [DATA_DIR]: optional, user-defined data directory. If not set, then use default data directory defined in root_data_dir.pro
-;   [FILENAME]: optional, used with 'save' keyword to save tplot vars to local storage with the filename,
-;             if not defined, this will save tvars with the default filename
+;   [DATA_DIR]: optional, user-defined data directory. 
+;               If not set, the default data directory defined in root_data_dir.pro will be used.
+;   [FILENAME]: optional, used with the 'save' keyword to save tplot vars to local storage with the specified filename.
+;               if not defined, tvars will be saved with the default filename.
 ; KEYWORDS:
 ;   Key_Param: MAVEN key parameter data
 ;        additional keywords from MVN_KP_TPLOT_SC are also accepted
@@ -44,11 +45,12 @@ PRO MAVEN_DATA_TPLOT, TRANGE=TRANGE, DATA_DIR=DATA_DIR,  KEY_PARAM=KEY_PARAM, CR
 ;   NO_DELETE: Don't delete old tplot vars, this is used to keep multiple tplot vars. Default is off. **USE IT CAREFULLY**
 ;   NO_SERVER: Don't check for remote files' updates on the server, temporarily use only the local data. This will speed up the 
 ;              searching and processing of data files, especially on poor web-connection conditions.
-;              Please be sure that you have all needed data downloaded already.
+;              Please make sure that you have all the needed data downloaded already.
 ; OUTPUTS: tplot variables according to the keywords provided
+; 
 ;
 ; CREATED BY: YDYE@MUST， 20190812
-; LAST UPDATE: 20210924
+; LAST UPDATE: 20240123
 ; -  
 
 ; Preparations
@@ -68,6 +70,7 @@ ENDIF ELSE BEGIN
 ENDELSE
 ; Set data directory path, which will be passed to "ROOT_DATA_DIR" keyword. 'data_dir' should be a string
 IF keyword_set(data_dir) THEN BEGIN
+  mvn_spice_load, /no_download
   setenv,'ROOT_DATA_DIR='+data_dir
 ENDIF
 
@@ -105,7 +108,7 @@ IF keyword_set(key_param) THEN BEGIN
     my_mvn_kp_read, trange, insitu, /exclude_template_files
   ENDIF ELSE BEGIN
     trange = time_string(trange)
-    mvn_kp_read, trange, insitu, /new_files ;use "new_files" keyword to download new/missing data
+    mvn_kp_read, trange, insitu, /new_files;, /exclude_template_files ;use "new_files" keyword to download new/missing data
   ENDELSE
   
   mvn_kp_tplot_sc, insitu, euv=euv, lpw=lpw, static=static, swea=swea, swia=swia, mag=mag, sep=sep, $
@@ -211,7 +214,8 @@ IF keyword_set(static) THEN BEGIN
 ;If you want to save common blocks in the sta_load procedure, using my_mvn_sta_l2_load instead
   
   IF keyword_set(den) THEN BEGIN
-      ; Use get_4dt to fetch multi-ion's density
+      ; Use get_4dt to fetch multi-ion's density. 
+      ; It is worth noting that the CO2+ density measurements are polluted by the O2+, please colsult the instrument team for data validation.
       ; Check data avaliablity
       mvn_sta_l2_load, sta_apid='c6', /tplot_vars_create; if no apid keyword set, then load all apids
       mvn_scpot
@@ -226,7 +230,7 @@ IF keyword_set(static) THEN BEGIN
       get_4dt,'n_4d','mvn_sta_get_c6',MASS=[0.5,1.68],m_int=1,name='den_h+'
       get_4dt,'n_4d','mvn_sta_get_c6',MASS=[12,20],m_int=16,name='den_o+'
       get_4dt,'n_4d','mvn_sta_get_c6',MASS=[24,40],m_int=32,name='den_o2+'
-      get_4dt,'n_4d','mvn_sta_get_c6',MASS=[40,48],m_int=44,name='den_co2+'
+      get_4dt,'n_4d','mvn_sta_get_c6',MASS=[40,48],m_int=44,name='den_co2+_polluted'
   ENDIF
   
   IF keyword_set(ivel) THEN BEGIN
@@ -310,14 +314,14 @@ ENDIF
 IF keyword_set(lanpw) THEN BEGIN
   ; Load MAVEN Langmuir Probe and Waves (LPW) L2 elecrton number density and temperature data
   ; This routine will create three tplot variables, namely as follows:
-  ; 1. " mvn_lpw_lp_ne_l2" for electron number density
+  ; 1. "mvn_lpw_lp_ne_l2" for electron number density
   ; 2. "mvn_lpw_lp_te_l2" for electron temperature
   ; 3. "mvn_lpw_lp_vsc_l2" for spacecraft potential
   ; Default LPW data product is 'lpnt', for other data products, check "mvn_lpw_load_l2.pro" for more details
   IF  ~keyword_set(lpw_list) THEN BEGIN
     lpw_list = ['lpnt']
   ENDIF
-  mvn_lpw_load_l2, lpw_list, success=sc1, tplotvars=tvs
+  mvn_lpw_load_l2, lpw_list, success=sc1, tplotvars=tvs, /noTPLOT
 ENDIF
 ;===========================================================================================
 

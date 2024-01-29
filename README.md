@@ -1,6 +1,6 @@
 # MAVEN_IDL
 ## Purpose
-IDL programs for convenient access and processing of MAVEN data based on the SPEDAS library. (Last updated in January 2024)
+IDL programs for convenient access and processing of MAVEN data based on the SPEDAS library.
 ## Contents
 | Name                 | Description |
 |----------------------|-------------|

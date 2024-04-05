@@ -1,4 +1,4 @@
-# MAVEN Data Toolkit 
+# MAVEN Data Supplementary Toolkit 
 ## Purpose
 IDL programs based on the SPEDAS library, for convenient access and processing of MAVEN data .
 ## Contents

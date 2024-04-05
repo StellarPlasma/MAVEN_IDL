@@ -1,6 +1,6 @@
-# MAVEN_IDL
+# MAVEN Data Toolkit 
 ## Purpose
-IDL programs for convenient access and processing of MAVEN data based on the SPEDAS library.
+IDL programs based on the SPEDAS library, for convenient access and processing of MAVEN data .
 ## Contents
 | Name                 | Description |
 |----------------------|-------------|
